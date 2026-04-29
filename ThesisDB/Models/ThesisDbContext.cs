@@ -10,6 +10,9 @@ namespace ThesisDB.Models
 
         public DbSet<Thesis> Theses { get; set; }
         public DbSet<Programme> Programmes { get; set; }
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Supervisor> Supervisors { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -27,6 +30,27 @@ namespace ThesisDB.Models
                 .WithMany(p => p.Theses)
                 .HasForeignKey(t => t.ProgrammeId)
                 .OnDelete(DeleteBehavior.Restrict); // Verhindert das Löschen eines Studiengangs, wenn noch Arbeiten zugeordnet sind
+
+            // Konfiguration der 1:n-Beziehung zwischen Student und Thesis
+            modelBuilder.Entity<Thesis>()
+                .HasOne(t => t.Student)
+                .WithMany(s => s.Theses)
+                .HasForeignKey(t => t.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Konfiguration der 1:n-Beziehung zwischen Supervisor und Thesis
+            modelBuilder.Entity<Thesis>()
+                .HasOne(t => t.Supervisor)
+                .WithMany(s => s.Theses)
+                .HasForeignKey(t => t.SupervisorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Konfiguration der 1:1-Beziehung zwischen Review und Thesis
+            modelBuilder.Entity<Review>()
+                .HasOne(r => r.Thesis)
+                .WithOne(t => t.Review)
+                .HasForeignKey<Review>(r => r.ThesisId)
+                .OnDelete(DeleteBehavior.Cascade); // Wenn Thesis gelöscht wird, wird auch das Review gelöscht
         }
     }
 }

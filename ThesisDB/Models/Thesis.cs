@@ -63,9 +63,24 @@ namespace ThesisDB.Models
         [Required(ErrorMessage = "Bitte wählen Sie einen Studiengang aus.")]
         [Display(Name = "Studiengang")]
         public int ProgrammeId { get; set; }
-
-        // Navigation Property: Eine Thesis gehört zu genau einem Studiengang
         [ForeignKey("ProgrammeId")]
         public Programme Programme { get; set; }
+
+        // Foreign Key für Student (Pflichtfeld)
+        [Required(ErrorMessage = "Bitte wählen Sie einen Studenten aus.")]
+        [Display(Name = "Student")]
+        public int StudentId { get; set; }
+        [ForeignKey("StudentId")]
+        public Student Student { get; set; }
+
+        // Foreign Key für Supervisor (Pflichtfeld)
+        [Required(ErrorMessage = "Bitte wählen Sie einen Betreuer aus.")]
+        [Display(Name = "Betreuer")]
+        public int SupervisorId { get; set; }
+        [ForeignKey("SupervisorId")]
+        public Supervisor Supervisor { get; set; }
+
+        // Navigation Property: Ein Review pro Thesis (kann null sein, da nicht jede Thesis ein Review hat)
+        public Review Review { get; set; }
     }
 }
