@@ -1,0 +1,73 @@
+@model IEnumerable<ThesisDB.Models.Thesis>
+
+@{
+    ViewData["Title"] = "Übersicht";
+}
+
+<h1>Übersicht</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Neu anlegen</a>
+</p>
+<table class="table align-middle">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.Title)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Status)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Type)
+            </th>
+            <th>
+                Studiengang
+            </th>
+            <th>
+                Student/-in
+            </th>
+            <th>
+                Betreuer/-in
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Status)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Type)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Programme.Name)
+            </td>
+            <td>
+                <a href="mailto:@item.Student.Email">@item.Student.LastName, @item.Student.FirstName (@item.Student.MatriculationNumber)</a>
+            </td>
+            <td>
+                <a href="mailto:@item.Supervisor.Email">@item.Supervisor.LastName, @item.Supervisor.FirstName</a>
+            </td>
+            <td class="text-end">
+                <div class="btn-group" role="group">
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary" title="Bearbeiten">
+                        <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info text-white" title="Details">
+                        <i class="bi bi-info-circle-fill"></i>
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger" title="Löschen">
+                        <i class="bi bi-trash-fill"></i>
+                    </a>
+                </div>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
