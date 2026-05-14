@@ -1,0 +1,174 @@
+﻿@model IEnumerable<ThesisDB.Models.Supervisor>
+
+@{
+    ViewData["Title"] = "Supervisors";
+}
+
+<h1>Supervisors</h1>
+
+<table class="table align-middle">
+    <thead>
+        <tr>
+            <th style="width: 5%;">
+                @Html.DisplayNameFor(model => model.Id)
+            </th>
+            <th style="width: 20%;">
+                @Html.DisplayNameFor(model => model.FirstName)
+            </th>
+            <th style="width: 20%;">
+                @Html.DisplayNameFor(model => model.LastName)
+            </th>
+            <th style="width: 25%;">
+                @Html.DisplayNameFor(model => model.Email)
+            </th>
+            <th class="text-center" style="width: 10%;">
+                @Html.DisplayNameFor(model => model.Active)
+            </th>
+            <th class="text-end" style="width: 20%;"></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr id="row-@item.Id">
+            <td>
+                @Html.DisplayFor(modelItem => item.Id)
+            </td>
+            <td>
+                <span class="view-mode-@item.Id">@Html.DisplayFor(modelItem => item.FirstName)</span>
+                <input type="text" name="FirstName" value="@item.FirstName" form="edit-form-@item.Id" class="form-control edit-mode-@item.Id d-none" required />
+            </td>
+            <td>
+                <span class="view-mode-@item.Id">@Html.DisplayFor(modelItem => item.LastName)</span>
+                <input type="text" name="LastName" value="@item.LastName" form="edit-form-@item.Id" class="form-control edit-mode-@item.Id d-none" required />
+            </td>
+            <td>
+                <span class="view-mode-@item.Id">@Html.DisplayFor(modelItem => item.Email)</span>
+                <input type="email" name="Email" value="@item.Email" form="edit-form-@item.Id" class="form-control edit-mode-@item.Id d-none" required />
+            </td>
+            <td class="text-center">
+                <span class="view-mode-@item.Id">
+                    @if (item.Active)
+                    {
+                        <i class="bi bi-check text-success" style="font-size: 1.5rem;"></i>
+                    }
+                    else
+                    {
+                        <i class="bi bi-dash text-secondary" style="font-size: 1.5rem;"></i>
+                    }
+                </span>
+                <div class="edit-mode-@item.Id d-none form-check d-flex justify-content-center mb-0">
+                    <input type="checkbox" name="Active" value="true" form="edit-form-@item.Id" class="form-check-input" style="transform: scale(1.5);" @(item.Active ? "checked" : "") />
+                </div>
+            </td>
+            <td class="text-end">
+                <!-- Forms for actions -->
+                <form id="edit-form-@item.Id" asp-action="Edit" asp-route-id="@item.Id" method="post" class="d-none">
+                    <input type="hidden" name="Id" value="@item.Id" />
+                </form>
+
+                <div class="btn-group view-mode-@item.Id" role="group">
+                    <button type="button" class="btn btn-primary" onclick="toggleEditMode(@item.Id, true)">
+                        <i class="bi bi-pencil-fill"></i>
+                    </button>
+                    @if (item.Theses != null && item.Theses.Any())
+                    {
+                        <button type="button" class="btn btn-outline-secondary" disabled>
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-danger" onclick="confirmDelete(@item.Id)">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    }
+                </div>
+
+                <div class="btn-group edit-mode-@item.Id d-none" role="group">
+                    <button type="submit" form="edit-form-@item.Id" class="btn btn-success">
+                        <i class="bi bi-floppy-fill"></i>
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="toggleEditMode(@item.Id, false)">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+}
+        
+        <!-- Row for new entry -->
+        <tr id="row-new-entry" class="d-none">
+            <td>
+                <form id="create-form" asp-action="Create" method="post" class="d-none"></form>
+            </td>
+            <td>
+                <input type="text" name="FirstName" form="create-form" class="form-control" placeholder="Vorname" required />
+            </td>
+            <td>
+                <input type="text" name="LastName" form="create-form" class="form-control" placeholder="Nachname" required />
+            </td>
+            <td>
+                <input type="email" name="Email" form="create-form" class="form-control" placeholder="E-Mail" required />
+            </td>
+            <td class="text-center">
+                <div class="form-check d-flex justify-content-center mb-0">
+                    <input type="checkbox" name="Active" value="true" form="create-form" class="form-check-input" style="transform: scale(1.5);" checked />
+                </div>
+            </td>
+            <td class="text-end">
+                <div class="btn-group" role="group">
+                    <button type="submit" form="create-form" class="btn btn-success">
+                        <i class="bi bi-floppy-fill"></i>
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="toggleNewEntryMode(false)">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+
+    </tbody>
+</table>
+
+<div id="new-entry-btn-container" class="mt-3">
+    <button type="button" class="btn btn-primary" onclick="toggleNewEntryMode(true)">Neuer Eintrag</button>
+</div>
+
+<form id="delete-form" asp-action="Delete" method="post" style="display: none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" id="delete-id" name="id" />
+</form>
+
+@section Scripts {
+    <script>
+        function toggleEditMode(id, showEdit) {
+            let viewElements = document.querySelectorAll('.view-mode-' + id);
+            let editElements = document.querySelectorAll('.edit-mode-' + id);
+
+            if (showEdit) {
+                viewElements.forEach(el => el.classList.add('d-none'));
+                editElements.forEach(el => el.classList.remove('d-none'));
+            } else {
+                viewElements.forEach(el => el.classList.remove('d-none'));
+                editElements.forEach(el => el.classList.add('d-none'));
+            }
+        }
+
+        function toggleNewEntryMode(showNewEntry) {
+            if (showNewEntry) {
+                document.getElementById('new-entry-btn-container').classList.add('d-none');
+                document.getElementById('row-new-entry').classList.remove('d-none');
+            } else {
+                document.getElementById('new-entry-btn-container').classList.remove('d-none');
+                document.getElementById('row-new-entry').classList.add('d-none');
+            }
+        }
+
+        function confirmDelete(id) {
+            if (confirm("Möchten Sie diesen Datensatz wirklich löschen?")) {
+                document.getElementById('delete-id').value = id;
+                document.getElementById('delete-form').submit();
+            }
+        }
+    </script>
+}
