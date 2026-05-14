@@ -195,7 +195,7 @@ namespace ThesisDB.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("StudentId")
+                    b.Property<int?>("StudentId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("SupervisorId")
@@ -242,8 +242,7 @@ namespace ThesisDB.Migrations
                     b.HasOne("ThesisDB.Models.Student", "Student")
                         .WithMany("Theses")
                         .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ThesisDB.Models.Supervisor", "Supervisor")
                         .WithMany("Theses")

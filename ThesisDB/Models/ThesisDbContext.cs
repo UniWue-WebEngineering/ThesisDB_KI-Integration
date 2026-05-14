@@ -31,11 +31,12 @@ namespace ThesisDB.Models
                 .HasForeignKey(t => t.ProgrammeId)
                 .OnDelete(DeleteBehavior.Restrict); // Verhindert das Löschen eines Studiengangs, wenn noch Arbeiten zugeordnet sind
 
-            // Konfiguration der 1:n-Beziehung zwischen Student und Thesis
+            // Konfiguration der optionalen 1:n-Beziehung zwischen Student und Thesis
             modelBuilder.Entity<Thesis>()
                 .HasOne(t => t.Student)
                 .WithMany(s => s.Theses)
                 .HasForeignKey(t => t.StudentId)
+                .IsRequired(false)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Konfiguration der 1:n-Beziehung zwischen Supervisor und Thesis

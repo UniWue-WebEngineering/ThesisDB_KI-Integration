@@ -1,85 +1,68 @@
-@model IEnumerable<ThesisDB.Models.Thesis>
+@model ThesisDB.Models.PaginatedList<ThesisDB.Models.Thesis>
 
 @{
-    ViewData["Title"] = "Übersicht";
+    ViewData["Title"] = "Themen-Übersicht";
 }
 
-<h1>Übersicht</h1>
+<h1 class="mb-4">@ViewData["Title"]</h1>
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Neu anlegen</a>
-</p>
-<table class="table align-middle">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Title)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Status)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Type)
-            </th>
-            <th>
-                Studiengang
-            </th>
-            <th>
-                Student/-in
-            </th>
-            <th>
-                Betreuer/-in
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Title)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Status)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Type)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Programme.Name)
-            </td>
-            <td>
-                <a href="mailto:@item.Student.Email">@item.Student.LastName, @item.Student.FirstName (@item.Student.MatriculationNumber)</a>
-            </td>
-            <td>
-                <a href="mailto:@item.Supervisor.Email">@item.Supervisor.LastName, @item.Supervisor.FirstName</a>
-            </td>
-            <td class="text-end">
-                <div class="btn-group" role="group">
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary" title="Bearbeiten">
-                        <i class="bi bi-pencil-fill"></i>
-                    </a>
-                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info text-white" title="Details">
-                        <i class="bi bi-info-circle-fill"></i>
-                    </a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger" title="Löschen">
-                        <i class="bi bi-trash-fill"></i>
-                    </a>
-                    @if (item.Review == null)
-                    {
-                        <a asp-controller="Review" asp-action="Create" asp-route-thesisId="@item.Id" class="btn btn-outline-success" title="Gutachten erstellen">
-                            <i class="bi bi-file-earmark-text"></i>
-                        </a>
-                    }
-                    else
-                    {
-                        <a asp-controller="Review" asp-action="Edit" asp-route-id="@item.Review.Id" class="btn btn-success" title="Gutachten bearbeiten">
-                            <i class="bi bi-file-earmark-text-fill"></i>
-                        </a>
-                    }
-                </div>
-            </td>
-        </tr>
+<div class="list-group shadow-sm" id="thesis-list-group">
+    <!-- 1. ListGroup-Item: Header mit Create-Button und Suche -->
+    <div class="list-group-item bg-light d-flex justify-content-between align-items-center p-3">
+        <div>
+            <a asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1"></i> Neu anlegen
+            </a>
+        </div>
+        <div style="width: 400px;">
+            <div class="input-group">
+                <input type="text" id="searchInput" class="form-control" placeholder="Suchen in Titel, Name..." value="@ViewData["CurrentFilter"]">
+                <button class="btn btn-primary" type="button" onclick="loadPage(1)" title="Suchen">
+                    <i class="bi bi-search"></i>
+                </button>
+                <button class="btn btn-secondary" type="button" onclick="resetSearch()" title="Filter zurücksetzen">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container für Tabelle und Pagination (wird über AJAX neu geladen) -->
+    <div id="dynamic-content">
+        <partial name="_ThesisListGroupPartial" model="Model" />
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById("searchInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                loadPage(1);
+            }
+        });
+
+        function resetSearch() {
+            document.getElementById("searchInput").value = "";
+            loadPage(1);
+        }
+
+        function loadPage(pageNumber) {
+            const searchString = document.getElementById("searchInput").value;
+            const pageSize = document.getElementById("pageSizeSelect") ? document.getElementById("pageSizeSelect").value : @ViewData["PageSize"];
+            
+            const url = `@Url.Action("Index")?searchString=${encodeURIComponent(searchString)}&pageNumber=${pageNumber}&pageSize=${pageSize}`;
+            
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('dynamic-content').innerHTML = html;
+            })
+            .catch(error => console.error('Error fetching table data:', error));
+        }
+    </script>
 }
-    </tbody>
-</table>

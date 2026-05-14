@@ -1,0 +1,96 @@
+﻿@model ThesisDB.Models.PaginatedList<ThesisDB.Models.Thesis>
+
+<table class="table align-middle m-0" style="table-layout: fixed; width: 100%;">
+    <thead>
+        <tr>
+            <th style="width: 25%;">
+                Titel
+            </th>
+            <th style="width: 10%;">
+                Status
+            </th>
+            <th style="width: 8%;">
+                Typ
+            </th>
+            <th style="width: 12%;">
+                Studiengang
+            </th>
+            <th style="width: 15%;">
+                Student/-in
+            </th>
+            <th style="width: 12%;">
+                Betreuer/-in
+            </th>
+            <!-- Feste Breite für die Action-Buttons -->
+            <th class="text-end" style="width: 180px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td class="text-wrap text-break">
+                @Html.DisplayFor(modelItem => item.Title)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Status)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Type)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Programme.Name)
+            </td>
+            <td>
+                @if (item.Student != null)
+                {
+                    <a href="mailto:@item.Student.Email">@item.Student.LastName, @item.Student.FirstName</a><br/>
+                    <small class="text-muted">(@item.Student.MatriculationNumber)</small>
+                }
+                else
+                {
+                    <span class="text-muted fst-italic">Nicht zugewiesen</span>
+                }
+            </td>
+            <td>
+                @if (item.Supervisor != null)
+                {
+                    <a href="mailto:@item.Supervisor.Email">@item.Supervisor.LastName, @item.Supervisor.FirstName</a>
+                }
+            </td>
+            <td class="text-end">
+                <div class="btn-group" role="group">
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-primary" title="Bearbeiten">
+                        <i class="bi bi-pencil-fill"></i>
+                    </a>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-info text-white" title="Details">
+                        <i class="bi bi-info-circle-fill"></i>
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger" title="Löschen">
+                        <i class="bi bi-trash-fill"></i>
+                    </a>
+                    @if (item.Review == null)
+                    {
+                        <a asp-controller="Review" asp-action="Create" asp-route-thesisId="@item.Id" class="btn btn-outline-success" title="Gutachten erstellen">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Review" asp-action="Edit" asp-route-id="@item.Review.Id" class="btn btn-success" title="Gutachten bearbeiten">
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                        </a>
+                    }
+                </div>
+            </td>
+        </tr>
+}
+@if (!Model.Any())
+{
+        <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+                Keine Ergebnisse gefunden.
+            </td>
+        </tr>
+}
+    </tbody>
+</table>

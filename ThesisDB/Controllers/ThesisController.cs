@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -19,10 +18,35 @@ namespace ThesisDB.Controllers
         }
 
         // GET: Thesis
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string searchString, int? pageNumber, int? pageSize)
         {
-            var thesisDbContext = _context.Theses.Include(t => t.Programme).Include(t => t.Student).Include(t => t.Supervisor).Include(t => t.Review);
-            return View(await thesisDbContext.ToListAsync());
+            ViewData["CurrentFilter"] = searchString;
+            ViewData["PageSize"] = pageSize ?? 10;
+
+            var theses = _context.Theses
+                .Include(t => t.Programme)
+                .Include(t => t.Student)
+                .Include(t => t.Supervisor)
+                .AsQueryable();
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                theses = theses.Where(s => s.Title.Contains(searchString)
+                                       || (s.Student != null && (s.Student.FirstName.Contains(searchString) || s.Student.LastName.Contains(searchString))));
+            }
+
+            int finalPageSize = pageSize ?? 10;
+            int finalPageNumber = pageNumber ?? 1;
+
+            var pagedTheses = await PaginatedList<Thesis>.CreateAsync(theses.AsNoTracking(), finalPageNumber, finalPageSize);
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                // Liefert die Teil-Ansicht mit Tabelle und Paginierung zurück
+                return PartialView("_ThesisListGroupPartial", pagedTheses);
+            }
+
+            return View(pagedTheses);
         }
 
         // GET: Thesis/Details/5
@@ -49,22 +73,15 @@ namespace ThesisDB.Controllers
         // GET: Thesis/Create
         public IActionResult Create()
         {
-            ViewData["ProgrammeId"] = new SelectList(_context.Programmes, "Id", "Name");
-            var students = _context.Students.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName + " (" + s.MatriculationNumber + ")" }).ToList();
-            ViewData["StudentId"] = new SelectList(students, "Id", "DisplayName");
-            var supervisors = _context.Supervisors.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName }).ToList();
-            ViewData["SupervisorId"] = new SelectList(supervisors, "Id", "DisplayName");
+            PopulateDropdowns();
             return View();
         }
 
         // POST: Thesis/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Title,Description,Status,Type,StartDate,EndDate,ProgrammeId,StudentId,SupervisorId")] Thesis thesis)
         {
-            // Remove validation errors for navigation properties and auto-set fields
             ModelState.Remove("Programme");
             ModelState.Remove("Student");
             ModelState.Remove("Supervisor");
@@ -77,11 +94,7 @@ namespace ThesisDB.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ProgrammeId"] = new SelectList(_context.Programmes, "Id", "Name", thesis.ProgrammeId);
-            var students = _context.Students.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName + " (" + s.MatriculationNumber + ")" }).ToList();
-            ViewData["StudentId"] = new SelectList(students, "Id", "DisplayName", thesis.StudentId);
-            var supervisors = _context.Supervisors.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName }).ToList();
-            ViewData["SupervisorId"] = new SelectList(supervisors, "Id", "DisplayName", thesis.SupervisorId);
+            PopulateDropdowns(thesis);
             return View(thesis);
         }
 
@@ -98,17 +111,11 @@ namespace ThesisDB.Controllers
             {
                 return NotFound();
             }
-            ViewData["ProgrammeId"] = new SelectList(_context.Programmes, "Id", "Name", thesis.ProgrammeId);
-            var students = _context.Students.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName + " (" + s.MatriculationNumber + ")" }).ToList();
-            ViewData["StudentId"] = new SelectList(students, "Id", "DisplayName", thesis.StudentId);
-            var supervisors = _context.Supervisors.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName }).ToList();
-            ViewData["SupervisorId"] = new SelectList(supervisors, "Id", "DisplayName", thesis.SupervisorId);
+            PopulateDropdowns(thesis);
             return View(thesis);
         }
 
         // POST: Thesis/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Status,Type,StartDate,EndDate,ProgrammeId,StudentId,SupervisorId")] Thesis thesis)
@@ -118,7 +125,6 @@ namespace ThesisDB.Controllers
                 return NotFound();
             }
 
-            // Remove validation errors for navigation properties and auto-set fields
             ModelState.Remove("Programme");
             ModelState.Remove("Student");
             ModelState.Remove("Supervisor");
@@ -145,11 +151,7 @@ namespace ThesisDB.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            ViewData["ProgrammeId"] = new SelectList(_context.Programmes, "Id", "Name", thesis.ProgrammeId);
-            var students = _context.Students.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName + " (" + s.MatriculationNumber + ")" }).ToList();
-            ViewData["StudentId"] = new SelectList(students, "Id", "DisplayName", thesis.StudentId);
-            var supervisors = _context.Supervisors.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName }).ToList();
-            ViewData["SupervisorId"] = new SelectList(supervisors, "Id", "DisplayName", thesis.SupervisorId);
+            PopulateDropdowns(thesis);
             return View(thesis);
         }
 
@@ -192,6 +194,15 @@ namespace ThesisDB.Controllers
         private bool ThesisExists(int id)
         {
             return _context.Theses.Any(e => e.Id == id);
+        }
+
+        private void PopulateDropdowns(Thesis thesis = null)
+        {
+            ViewData["ProgrammeId"] = new SelectList(_context.Programmes, "Id", "Name", thesis?.ProgrammeId);
+            var students = _context.Students.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName + " (" + s.MatriculationNumber + ")" }).ToList();
+            ViewData["StudentId"] = new SelectList(students, "Id", "DisplayName", thesis?.StudentId);
+            var supervisors = _context.Supervisors.Select(s => new { Id = s.Id, DisplayName = s.LastName + ", " + s.FirstName }).ToList();
+            ViewData["SupervisorId"] = new SelectList(supervisors, "Id", "DisplayName", thesis?.SupervisorId);
         }
     }
 }

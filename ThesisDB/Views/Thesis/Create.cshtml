@@ -51,7 +51,9 @@
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label asp-for="StudentId" class="control-label fw-bold">Student/-in</label>
-                    <select asp-for="StudentId" class ="form-select" asp-items="ViewBag.StudentId"></select>
+                    <select asp-for="StudentId" class ="form-select" asp-items="ViewBag.StudentId">
+                        <option value="">-- Keine Zuordnung --</option>
+                    </select>
                 </div>
                 <div class="col-md-6 mb-3">
                     <label asp-for="SupervisorId" class="control-label fw-bold">Betreuer/-in</label>

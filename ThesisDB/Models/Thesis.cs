@@ -66,10 +66,9 @@ namespace ThesisDB.Models
         [ForeignKey("ProgrammeId")]
         public Programme Programme { get; set; }
 
-        // Foreign Key für Student (Pflichtfeld)
-        [Required(ErrorMessage = "Bitte wählen Sie einen Studenten aus.")]
+        // Foreign Key für Student (Optional)
         [Display(Name = "Student")]
-        public int StudentId { get; set; }
+        public int? StudentId { get; set; }
         [ForeignKey("StudentId")]
         public Student Student { get; set; }
 

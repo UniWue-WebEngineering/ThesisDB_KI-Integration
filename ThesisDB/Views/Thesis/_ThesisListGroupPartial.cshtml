@@ -1,0 +1,55 @@
+﻿@model ThesisDB.Models.PaginatedList<ThesisDB.Models.Thesis>
+
+<!-- 2. ListGroup-Item: Tabelle -->
+<div class="list-group-item p-0 table-responsive" id="table-container">
+    <partial name="_ThesisTablePartial" model="Model" />
+</div>
+
+<!-- 3. ListGroup-Item: Footer mit Pagination und PageSize -->
+<div class="list-group-item bg-light d-flex justify-content-between align-items-center p-3" id="pagination-container">
+    <!-- Pagination Links -->
+    <nav aria-label="Page navigation">
+        <ul class="pagination m-0">
+            @{
+                var prevDisabled = !Model.HasPreviousPage ? "disabled" : "";
+                var nextDisabled = !Model.HasNextPage ? "disabled" : "";
+            }
+            <li class="page-item @prevDisabled">
+                <button class="page-link" onclick="loadPage(@(Model.PageIndex - 1))" @(Model.HasPreviousPage ? "" : "disabled")>Zurück</button>
+            </li>
+            
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <button class="page-link" onclick="loadPage(@i)">@i</button>
+                </li>
+            }
+
+            <li class="page-item @nextDisabled">
+                <button class="page-link" onclick="loadPage(@(Model.PageIndex + 1))" @(Model.HasNextPage ? "" : "disabled")>Weiter</button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Dropdown PageSize -->
+    <div class="d-flex align-items-center">
+        <label for="pageSizeSelect" class="me-2 mb-0 fw-bold">Einträge pro Seite:</label>
+        <select id="pageSizeSelect" class="form-select form-select-sm w-auto" onchange="loadPage(1)">
+            @{
+                int[] pageSizes = { 5, 10, 20 };
+                int currentSize = (int)ViewData["PageSize"];
+                foreach (var size in pageSizes)
+                {
+                    if (size == currentSize)
+                    {
+                        <option value="@size" selected="selected">@size</option>
+                    }
+                    else
+                    {
+                        <option value="@size">@size</option>
+                    }
+                }
+            }
+        </select>
+    </div>
+</div>

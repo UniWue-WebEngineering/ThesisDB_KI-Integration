@@ -188,6 +188,40 @@ namespace ThesisDB.Models
                     }
                 };
 
+                // Add 30 additional theses from economics without a student assigned
+                string[] ecoTitles = new string[] {
+                    "Auswirkungen der Inflation auf das Konsumverhalten", "Markteintrittsstrategien für Schwellenländer",
+                    "Rolle von ESG-Kriterien bei Investitionsentscheidungen", "Einfluss der Digitalisierung auf das Personalmanagement",
+                    "Wirtschaftliche Folgen des demografischen Wandels", "Bedeutung von Kryptowährungen im internationalen Zahlungsverkehr",
+                    "Erfolgsfaktoren von Start-ups im FinTech-Sektor", "Analyse von Preisbildungsstrategien im E-Commerce",
+                    "Auswirkungen von Remote Work auf die Produktivität", "Bewertung von Nachhaltigkeitsberichterstattung in DAX-Unternehmen",
+                    "Rolle der künstlichen Intelligenz in der Finanzanalyse", "Einfluss von Social Media auf das Markenimage",
+                    "Wirtschaftliche Effekte von Freihandelsabkommen", "Strategien zur Mitarbeiterbindung in Zeiten des Fachkräftemangels",
+                    "Bedeutung von Corporate Social Responsibility für den Unternehmenserfolg", "Analyse von Crowdfunding als alternative Finanzierungsform",
+                    "Auswirkungen der Geldpolitik auf den Immobilienmarkt", "Erfolgsfaktoren im internationalen Projektmanagement",
+                    "Rolle des Influencer-Marketings in der Modebranche", "Einfluss der Sharing Economy auf traditionelle Geschäftsmodelle",
+                    "Wirtschaftliche Folgen von Pandemien auf globale Lieferketten", "Strategien zur Krisenbewältigung in der Tourismusbranche",
+                    "Bedeutung von Diversity Management für Innovation", "Analyse von Kundenbindungsprogrammen im Einzelhandel",
+                    "Auswirkungen der CO2-Bepreisung auf die Industrie", "Erfolgsfaktoren von Familienunternehmen beim Generationswechsel",
+                    "Rolle von Big Data im strategischen Marketing", "Einfluss der Automatisierung auf den Arbeitsmarkt",
+                    "Wirtschaftliche Effekte von staatlichen Subventionen auf erneuerbare Energien", "Strategien zur Optimierung des Working Capital Managements"
+                };
+
+                foreach(var title in ecoTitles)
+                {
+                    theses.Add(new Thesis
+                    {
+                        Title = title,
+                        Description = "Eine detaillierte wirtschaftswissenschaftliche Untersuchung.",
+                        Status = Thesis.ThesisStatus.ausgeschrieben,
+                        Type = Thesis.ThesisType.Bachelor,
+                        LastModified = DateTime.UtcNow,
+                        ProgrammeId = programmes[random.Next(programmes.Count)].Id,
+                        StudentId = null, // Kein Student zugeordnet
+                        SupervisorId = supervisors[random.Next(supervisors.Count)].Id
+                    });
+                }
+
                 context.Theses.AddRange(theses);
                 context.SaveChanges();
             }
