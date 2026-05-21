@@ -1,11 +1,13 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ThesisDB.Models;
 
 namespace ThesisDB.Controllers
 {
+    [Authorize(Roles = "Administrator")]
     public class SupervisorsController : Controller
     {
         private readonly ThesisDbContext _context;

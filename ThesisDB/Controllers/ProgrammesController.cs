@@ -1,4 +1,4 @@
-﻿
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -7,6 +7,7 @@ using ThesisDB.Models;
 
 namespace ThesisDB.Controllers
 {
+    [Authorize(Roles = "Administrator")]
     public class ProgrammesController : Controller
     {
         private readonly ThesisDbContext _context;

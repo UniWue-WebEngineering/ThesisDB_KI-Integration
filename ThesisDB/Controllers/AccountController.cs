@@ -52,6 +52,12 @@ namespace ThesisDB.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        [HttpGet]
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
+
         private IActionResult RedirectToLocal(string returnUrl)
         {
             if (Url.IsLocalUrl(returnUrl))

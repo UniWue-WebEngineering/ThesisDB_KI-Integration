@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ThesisDB.Models;
 
 namespace ThesisDB.Controllers
 {
+    [Authorize(Roles = "Administrator")]
     public class UserManagementController : Controller
     {
         private readonly UserManager<ThesisDbUser> _userManager;
