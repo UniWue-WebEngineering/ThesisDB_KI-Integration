@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ThesisDB.Models;
 
@@ -9,6 +10,18 @@ builder.Services.AddControllersWithViews();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ThesisDbContext>(options =>
     options.UseSqlite(connectionString));
+
+builder.Services.AddIdentity<ThesisDbUser, IdentityRole>(options => {
+        // Optionale Konfigurationen hier
+    })
+    .AddEntityFrameworkStores<ThesisDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+});
 
 var app = builder.Build();
 
@@ -28,7 +41,11 @@ else
         try
         {
             var context = services.GetRequiredService<ThesisDbContext>();
-            DataSeeder.SeedData(context);
+            var userManager = services.GetRequiredService<UserManager<ThesisDbUser>>();
+            var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+            
+            // SeedData asynchron aufrufen
+            DataSeeder.SeedDataAsync(context, userManager, roleManager).Wait();
         }
         catch (Exception ex)
         {
@@ -41,6 +58,7 @@ else
 app.UseHttpsRedirection();
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
@@ -49,6 +67,5 @@ app.MapControllerRoute(
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

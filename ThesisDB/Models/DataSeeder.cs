@@ -1,16 +1,47 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace ThesisDB.Models
 {
     public static class DataSeeder
     {
-        public static void SeedData(ThesisDbContext context)
+        public static async Task SeedDataAsync(ThesisDbContext context, UserManager<ThesisDbUser> userManager, RoleManager<IdentityRole> roleManager)
         {
             // Sicherstellen, dass die Datenbank existiert und die Migrationen angewendet wurden
             context.Database.Migrate();
+
+            // 0. Rollen und Benutzer seeden
+            string[] roleNames = { "Administrator", "Operator" };
+            foreach (var roleName in roleNames)
+            {
+                var roleExist = await roleManager.RoleExistsAsync(roleName);
+                if (!roleExist)
+                {
+                    await roleManager.CreateAsync(new IdentityRole(roleName));
+                }
+            }
+
+            var adminUser = await userManager.FindByNameAsync("admin");
+            if (adminUser == null)
+            {
+                var user = new ThesisDbUser
+                {
+                    UserName = "admin",
+                    Email = "admin@thesisdb.local",
+                    FirstName = "Admin",
+                    LastName = "User"
+                };
+
+                var result = await userManager.CreateAsync(user, "Admin123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(user, "Administrator");
+                }
+            }
 
             // 1. Studiengänge (Programmes) seeden, falls noch keine existieren
             if (!context.Programmes.Any())
@@ -259,6 +290,13 @@ namespace ThesisDB.Models
                     context.SaveChanges();
                 }
             }
+        }
+        
+        // Kompatibilitätsmethode für den Fall, dass noch irgendwo die alte Version aufgerufen wird
+        public static void SeedData(ThesisDbContext context)
+        {
+            // Dummy implementation
+            // Wir verwenden jetzt nur noch SeedDataAsync
         }
     }
 }
