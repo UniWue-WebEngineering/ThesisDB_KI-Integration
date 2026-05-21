@@ -1,0 +1,290 @@
+﻿@model IEnumerable<ThesisDB.Controllers.UserViewModel>
+
+@{
+    ViewData["Title"] = "Userkonten";
+    var roles = ViewBag.Roles as List<string> ?? new List<string>();
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Vorname</th>
+            <th>Nachname</th>
+            <th>Username</th>
+            <th>Rolle</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.User.FirstName</td>
+                <td>@item.User.LastName</td>
+                <td>@item.User.UserName</td>
+                <td>@item.Role</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-success edit-user-btn" data-bs-toggle="modal" data-bs-target="#editUserModal" data-id="@item.User.Id"><i class="bi bi-pencil"></i></button>
+                        <button type="button" class="btn btn-danger delete-user-btn" data-bs-toggle="modal" data-bs-target="#deleteUserModal" data-id="@item.User.Id"><i class="bi bi-trash"></i></button>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+        Neuer Eintrag
+    </button>
+</p>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createUserModalLabel">Neuer User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="create-alert-placeholder"></div>
+                <form id="createUserForm">
+                    <div class="mb-3">
+                        <label for="createFirstName" class="form-label">Vorname</label>
+                        <input type="text" class="form-control" id="createFirstName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createLastName" class="form-label">Nachname</label>
+                        <input type="text" class="form-control" id="createLastName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createUserName" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="createUserName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createEmail" class="form-label">E-Mail</label>
+                        <input type="email" class="form-control" id="createEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createRole" class="form-label">Rolle</label>
+                        <select class="form-select" id="createRole">
+                            @foreach (var role in roles)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPassword" class="form-label">Passwort</label>
+                        <input type="password" class="form-control" id="createPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createConfirmPassword" class="form-label">Passwort bestätigen</label>
+                        <input type="password" class="form-control" id="createConfirmPassword" required>
+                        <div class="invalid-feedback">Passwörter stimmen nicht überein.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-primary" id="saveCreateUser">Speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editUserModalLabel">User bearbeiten</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="edit-alert-placeholder"></div>
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="mb-3">
+                        <label for="editFirstName" class="form-label">Vorname</label>
+                        <input type="text" class="form-control" id="editFirstName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLastName" class="form-label">Nachname</label>
+                        <input type="text" class="form-control" id="editLastName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editUserName" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="editUserName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">E-Mail</label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">Rolle</label>
+                        <select class="form-select" id="editRole">
+                            @foreach (var role in roles)
+                            {
+                                <option value="@role">@role</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPassword" class="form-label">Neues Passwort</label>
+                        <input type="password" class="form-control" id="editPassword">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editConfirmPassword" class="form-label">Neues Passwort bestätigen</label>
+                        <input type="password" class="form-control" id="editConfirmPassword">
+                        <div class="invalid-feedback">Passwörter stimmen nicht überein.</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+                <button type="button" class="btn btn-primary" id="saveEditUser">Speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteUserModalLabel">User löschen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Sind Sie sicher, dass Sie dieses Userkonto löschen wollen?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Nein</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUser">Ja</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            var userIdToDelete;
+            var userIdToEdit;
+
+            // Create User
+            $('#saveCreateUser').on('click', function () {
+                var password = $('#createPassword').val();
+                var confirmPassword = $('#createConfirmPassword').val();
+
+                if (password !== confirmPassword) {
+                    $('#createConfirmPassword').addClass('is-invalid');
+                    return;
+                }
+                $('#createConfirmPassword').removeClass('is-invalid');
+
+                var data = {
+                    firstName: $('#createFirstName').val(),
+                    lastName: $('#createLastName').val(),
+                    userName: $('#createUserName').val(),
+                    email: $('#createEmail').val(),
+                    role: $('#createRole').val(),
+                    password: password
+                };
+
+                $.ajax({
+                    url: '@Url.Action("Create", "UserManagement")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function (result) {
+                        showAlert('create-alert-placeholder', result.message, 'success');
+                        setTimeout(function() { location.reload(); }, 2000);
+                    },
+                    error: function (xhr) {
+                        var error = xhr.responseJSON;
+                        showAlert('create-alert-placeholder', error.message, 'danger');
+                    }
+                });
+            });
+
+            // Edit User
+            $('.edit-user-btn').on('click', function () {
+                userIdToEdit = $(this).data('id');
+                $('#editUserId').val(userIdToEdit);
+                
+                $.get('@Url.Action("GetUser", "UserManagement")?id=' + userIdToEdit, function (data) {
+                    $('#editFirstName').val(data.firstName);
+                    $('#editLastName').val(data.lastName);
+                    $('#editUserName').val(data.userName);
+                    $('#editEmail').val(data.email);
+                    $('#editRole').val(data.role);
+                });
+            });
+
+            $('#saveEditUser').on('click', function () {
+                var password = $('#editPassword').val();
+                var confirmPassword = $('#editConfirmPassword').val();
+
+                if (password !== confirmPassword) {
+                    $('#editConfirmPassword').addClass('is-invalid');
+                    return;
+                }
+                $('#editConfirmPassword').removeClass('is-invalid');
+
+                var data = {
+                    firstName: $('#editFirstName').val(),
+                    lastName: $('#editLastName').val(),
+                    userName: $('#editUserName').val(),
+                    email: $('#editEmail').val(),
+                    role: $('#editRole').val(),
+                    password: password
+                };
+
+                $.ajax({
+                    url: '@Url.Action("Edit", "UserManagement")/' + userIdToEdit,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(data),
+                    success: function (result) {
+                        showAlert('edit-alert-placeholder', result.message, 'success');
+                        setTimeout(function() { location.reload(); }, 2000);
+                    },
+                    error: function (xhr) {
+                        var error = xhr.responseJSON;
+                        showAlert('edit-alert-placeholder', error.message, 'danger');
+                    }
+                });
+            });
+
+            // Delete User
+            $('.delete-user-btn').on('click', function () {
+                userIdToDelete = $(this).data('id');
+            });
+
+            $('#confirmDeleteUser').on('click', function () {
+                $.ajax({
+                    url: '@Url.Action("Delete", "UserManagement")/' + userIdToDelete,
+                    type: 'POST',
+                    success: function () {
+                        location.reload();
+                    }
+                });
+            });
+            
+            function showAlert(placeholderId, message, type) {
+                var alertHtml = '<div class="alert alert-' + type + ' alert-dismissible" role="alert">' +
+                                '   <div>' + message + '</div>' +
+                                '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>' +
+                                '</div>';
+                $('#' + placeholderId).html(alertHtml);
+            }
+        });
+    </script>
+}
