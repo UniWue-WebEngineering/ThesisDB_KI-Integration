@@ -9,7 +9,7 @@ builder.Services.AddControllersWithViews();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ThesisDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseAzureSql(connectionString));
 
 builder.Services.AddIdentity<ThesisDbUser, IdentityRole>(options => {
         // Optionale Konfigurationen hier
