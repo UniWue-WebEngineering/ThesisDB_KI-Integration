@@ -1,6 +1,11 @@
 using System;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -11,10 +16,13 @@ namespace ThesisDB.Controllers
     public class ThesisController : Controller
     {
         private readonly ThesisDbContext _context;
+        private readonly BlobServiceClient _blobServiceClient;
+        private const string ContainerName = "thesis-pdf";
 
-        public ThesisController(ThesisDbContext context)
+        public ThesisController(ThesisDbContext context, BlobServiceClient blobServiceClient)
         {
             _context = context;
+            _blobServiceClient = blobServiceClient;
         }
 
         // GET: Thesis
@@ -43,7 +51,6 @@ namespace ThesisDB.Controllers
 
             if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
             {
-                // Liefert die Teil-Ansicht mit Tabelle und Paginierung zurück
                 return PartialView("_ThesisListGroupPartial", pagedTheses);
             }
 
@@ -121,7 +128,7 @@ namespace ThesisDB.Controllers
         // POST: Thesis/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Status,Type,StartDate,EndDate,ProgrammeId,StudentId,SupervisorId")] Thesis thesis)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Description,Status,Type,StartDate,EndDate,ProgrammeId,StudentId,SupervisorId,PdfFileName")] Thesis thesis, IFormFile pdfFile)
         {
             if (id != thesis.Id)
             {
@@ -132,13 +139,54 @@ namespace ThesisDB.Controllers
             ModelState.Remove("Student");
             ModelState.Remove("Supervisor");
             ModelState.Remove("Review");
+            ModelState.Remove("pdfFile");
+
+            if (pdfFile != null)
+            {
+                if (pdfFile.ContentType != "application/pdf")
+                {
+                    ModelState.AddModelError("pdfFile", "Es sind nur PDF-Dateien erlaubt.");
+                }
+                if (pdfFile.Length > 10 * 1024 * 1024) // 10 MB
+                {
+                    ModelState.AddModelError("pdfFile", "Die Datei darf maximal 10 MB groß sein.");
+                }
+            }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    thesis.LastModified = DateTime.Now;
-                    _context.Update(thesis);
+                    var thesisToUpdate = await _context.Theses.FindAsync(id);
+                    if (thesisToUpdate == null)
+                    {
+                        return NotFound();
+                    }
+
+                    if (pdfFile != null)
+                    {
+                        var blobContainer = _blobServiceClient.GetBlobContainerClient(ContainerName);
+                        await blobContainer.CreateIfNotExistsAsync(PublicAccessType.None);
+
+                        var fileName = $"{Guid.NewGuid().ToString().Replace("-", "")}{Path.GetExtension(pdfFile.FileName)}";
+                        var blobClient = blobContainer.GetBlobClient(fileName);
+
+                        await blobClient.UploadAsync(pdfFile.OpenReadStream(), true);
+                        thesisToUpdate.PdfFileName = fileName;
+                    }
+
+                    thesisToUpdate.Title = thesis.Title;
+                    thesisToUpdate.Description = thesis.Description;
+                    thesisToUpdate.Status = thesis.Status;
+                    thesisToUpdate.Type = thesis.Type;
+                    thesisToUpdate.StartDate = thesis.StartDate;
+                    thesisToUpdate.EndDate = thesis.EndDate;
+                    thesisToUpdate.ProgrammeId = thesis.ProgrammeId;
+                    thesisToUpdate.StudentId = thesis.StudentId;
+                    thesisToUpdate.SupervisorId = thesis.SupervisorId;
+                    thesisToUpdate.LastModified = DateTime.Now;
+
+                    _context.Update(thesisToUpdate);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
@@ -154,13 +202,43 @@ namespace ThesisDB.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            // Load Student to populate the view model properly on error
+            
             if (thesis.StudentId.HasValue)
             {
                 thesis.Student = await _context.Students.FindAsync(thesis.StudentId.Value);
             }
             PopulateDropdowns(thesis);
             return View(thesis);
+        }
+
+        public async Task<IActionResult> DownloadPdf(int id)
+        {
+            var thesis = await _context.Theses
+                .Include(t => t.Student)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (thesis == null || string.IsNullOrEmpty(thesis.PdfFileName))
+            {
+                return NotFound();
+            }
+
+            var blobContainer = _blobServiceClient.GetBlobContainerClient(ContainerName);
+            var blobClient = blobContainer.GetBlobClient(thesis.PdfFileName);
+
+            if (!await blobClient.ExistsAsync())
+            {
+                return NotFound();
+            }
+
+            var stream = new MemoryStream();
+            await blobClient.DownloadToAsync(stream);
+            stream.Position = 0;
+
+            var studentLastName = thesis.Student?.LastName ?? "Student";
+            var sanitizedLastName = Regex.Replace(studentLastName, @"[^a-zA-Z0-9_]", "");
+            var downloadFileName = $"Thesis_{sanitizedLastName}.pdf";
+
+            return File(stream, "application/pdf", downloadFileName);
         }
 
         // GET: Thesis/Delete/5

@@ -333,6 +333,10 @@ namespace ThesisDB.Migrations
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("PdfFileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("ProgrammeId")
                         .HasColumnType("int");
 

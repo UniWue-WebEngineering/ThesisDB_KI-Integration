@@ -60,13 +60,32 @@
             Student/-in
         </dt>
         <dd class="col-sm-9 mb-2">
-            <a href="mailto:@Model.Student.Email">@Model.Student.LastName, @Model.Student.FirstName (@Model.Student.MatriculationNumber)</a>
+            @if (Model.Student != null)
+            {
+                <a href="mailto:@Model.Student.Email">@Model.Student.LastName, @Model.Student.FirstName (@Model.Student.MatriculationNumber)</a>
+            }
         </dd>
         <dt class="col-sm-3 fw-bold mb-2">
             Betreuer/-in
         </dt>
         <dd class="col-sm-9 mb-2">
-            <a href="mailto:@Model.Supervisor.Email">@Model.Supervisor.LastName, @Model.Supervisor.FirstName</a>
+            @if (Model.Supervisor != null)
+            {
+                <a href="mailto:@Model.Supervisor.Email">@Model.Supervisor.LastName, @Model.Supervisor.FirstName</a>
+            }
+        </dd>
+        <dt class="col-sm-3 fw-bold mb-2">
+            PDF-Datei
+        </dt>
+        <dd class="col-sm-9 mb-2">
+            @if (!string.IsNullOrEmpty(Model.PdfFileName))
+            {
+                <a asp-action="DownloadPdf" asp-route-id="@Model.Id">Download</a>
+            }
+            else
+            {
+                <span class="fst-italic">nicht verfügbar</span>
+            }
         </dd>
     </dl>
 </div>

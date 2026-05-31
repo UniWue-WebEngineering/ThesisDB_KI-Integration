@@ -8,7 +8,7 @@
 <hr />
 <div class="row">
     <div class="col-md-12">
-        <form asp-action="Edit">
+        <form asp-action="Edit" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
             <div class="mb-3">
@@ -72,7 +72,26 @@
                 </div>
             </div>
             <div class="mb-3">
-                <input type="submit" value="Speichern" class="btn btn-primary" />
+                <label class="control-label fw-bold">PDF-Datei</label>
+                @if (!string.IsNullOrEmpty(Model.PdfFileName))
+                {
+                    <a asp-action="DownloadPdf" asp-route-id="@Model.Id" class="ms-2">Download</a>
+                }
+                else
+                {
+                    <span class="ms-2 fst-italic">nicht verfügbar</span>
+                }
+            </div>
+            <div class="mb-3">
+                <input type="file" name="pdfFile" id="pdfFile" class="form-control" accept="application/pdf" />
+                <span class="text-danger" id="pdfFileError"></span>
+                @if (ViewData.ModelState.ContainsKey("pdfFile"))
+                {
+                    <span class="text-danger">@ViewData.ModelState["pdfFile"].Errors.FirstOrDefault()?.ErrorMessage</span>
+                }
+            </div>
+            <div class="mb-3">
+                <input type="submit" value="Speichern" class="btn btn-primary" id="btnSubmit" />
             </div>
         </form>
     </div>
@@ -165,6 +184,26 @@
             const createStudentForm = document.getElementById("createStudentForm");
             const createError = document.getElementById("createError");
             
+            const pdfFile = document.getElementById('pdfFile');
+            const pdfFileError = document.getElementById('pdfFileError');
+            const btnSubmit = document.getElementById('btnSubmit');
+
+            pdfFile.addEventListener('change', function() {
+                pdfFileError.textContent = '';
+                btnSubmit.disabled = false;
+                
+                if (this.files.length > 0) {
+                    const file = this.files[0];
+                    if (file.type !== 'application/pdf') {
+                        pdfFileError.textContent = 'Es sind nur PDF-Dateien erlaubt.';
+                        btnSubmit.disabled = true;
+                    } else if (file.size > 10 * 1024 * 1024) {
+                        pdfFileError.textContent = 'Die Datei darf maximal 10 MB groß sein.';
+                        btnSubmit.disabled = true;
+                    }
+                }
+            });
+
             const studentModalEl = document.getElementById('studentModal');
             const studentModal = new bootstrap.Modal(studentModalEl);
 

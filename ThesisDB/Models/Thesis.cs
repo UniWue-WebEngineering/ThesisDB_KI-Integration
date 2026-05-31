@@ -81,5 +81,7 @@ namespace ThesisDB.Models
 
         // Navigation Property: Ein Review pro Thesis (kann null sein, da nicht jede Thesis ein Review hat)
         public Review Review { get; set; }
+
+        [Display(Name = "PDF Dateiname")] public string PdfFileName { get; set; } = "";
     }
 }

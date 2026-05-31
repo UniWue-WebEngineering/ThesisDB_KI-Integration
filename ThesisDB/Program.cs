@@ -1,3 +1,4 @@
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ThesisDB.Models;
@@ -10,6 +11,8 @@ builder.Services.AddControllersWithViews();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ThesisDbContext>(options =>
     options.UseAzureSql(connectionString));
+
+builder.Services.AddSingleton(x => new BlobServiceClient(builder.Configuration.GetConnectionString("AzureBlobStorage")));
 
 builder.Services.AddIdentity<ThesisDbUser, IdentityRole>(options => {
         // Optionale Konfigurationen hier
