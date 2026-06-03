@@ -1,30 +1,41 @@
-﻿using System.Linq;
+﻿using System;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ThesisDB.Models;
+using Google.GenAI;
+using Google.GenAI.Types;
 
 namespace ThesisDB.Controllers
 {
     public class ReviewController : Controller
     {
         private readonly ThesisDbContext _context;
-
-        public ReviewController(ThesisDbContext context)
+        private readonly BlobServiceClient _blobServiceClient;
+        private const string ContainerName = "thesis-pdf";
+        private readonly Client _geminiClient;
+        
+        public ReviewController(ThesisDbContext context, BlobServiceClient blobServiceClient, Client geminiClient)
         {
             _context = context;
+            _blobServiceClient = blobServiceClient;
+            _geminiClient = geminiClient;
         }
 
         // GET: Review/Create/5 (5 is ThesisId)
-        public IActionResult Create(int? thesisId)
+        public async Task<IActionResult> Create(int? thesisId)
         {
             if (thesisId == null)
             {
                 return NotFound();
             }
 
-            var thesis = _context.Theses.Find(thesisId);
+            var thesis = await _context.Theses.FindAsync(thesisId);
             if (thesis == null)
             {
                 return NotFound();
@@ -32,6 +43,7 @@ namespace ThesisDB.Controllers
 
             var review = new Review { ThesisId = thesis.Id };
             ViewBag.ThesisTitle = thesis.Title;
+            ViewBag.HasPdf = !string.IsNullOrEmpty(thesis.PdfFileName);
             PopulateGradeSelectList();
             return View(review);
         }
@@ -50,8 +62,12 @@ namespace ThesisDB.Controllers
                 return RedirectToAction("Index", "Thesis");
             }
             
-            var thesis = _context.Theses.Find(review.ThesisId);
-            if(thesis != null) ViewBag.ThesisTitle = thesis.Title;
+            var thesis = await _context.Theses.FindAsync(review.ThesisId);
+            if(thesis != null)
+            {
+                ViewBag.ThesisTitle = thesis.Title;
+                ViewBag.HasPdf = !string.IsNullOrEmpty(thesis.PdfFileName);
+            }
             
             PopulateGradeSelectList(review.Grade);
             return View(review);
@@ -71,6 +87,7 @@ namespace ThesisDB.Controllers
                 return NotFound();
             }
             ViewBag.ThesisTitle = review.Thesis.Title;
+            ViewBag.HasPdf = !string.IsNullOrEmpty(review.Thesis.PdfFileName);
             PopulateGradeSelectList(review.Grade);
             return View(review);
         }
@@ -108,11 +125,78 @@ namespace ThesisDB.Controllers
                 return RedirectToAction("Index", "Thesis");
             }
             
-            var thesis = _context.Theses.Find(review.ThesisId);
-            if(thesis != null) ViewBag.ThesisTitle = thesis.Title;
+            var thesis = await _context.Theses.FindAsync(review.ThesisId);
+            if(thesis != null)
+            {
+                ViewBag.ThesisTitle = thesis.Title;
+                ViewBag.HasPdf = !string.IsNullOrEmpty(thesis.PdfFileName);
+            }
             
             PopulateGradeSelectList(review.Grade);
             return View(review);
+        }
+        
+        [HttpPost]
+        public async Task<IActionResult> GenerateAiReview(int thesisId)
+        {
+            try
+            {
+                var thesis = await _context.Theses.FindAsync(thesisId);
+                if (thesis == null || string.IsNullOrEmpty(thesis.PdfFileName))
+                {
+                    return BadRequest("Für diese Abschlussarbeit ist keine PDF-Datei vorhanden.");
+                }
+
+                var blobContainer = _blobServiceClient.GetBlobContainerClient(ContainerName);
+                var blobClient = blobContainer.GetBlobClient(thesis.PdfFileName);
+
+                if (!await blobClient.ExistsAsync())
+                {
+                    return BadRequest("Die PDF-Datei konnte nicht im Speicher gefunden werden.");
+                }
+
+                using var stream = new MemoryStream();
+                await blobClient.DownloadToAsync(stream);
+                var pdfBytes = stream.ToArray();
+
+                var uploadedFile = await _geminiClient.Files.UploadAsync(pdfBytes, "thesis.pdf", new UploadFileConfig() { MimeType = "application/pdf" });
+                
+                var prompt = "Analysiere die beigefügte Abschlussarbeit und gib eine strukturierte Bewertung ab. Deine Antwort soll jeweils in einem Absatz eine Zusammenfassung (summary) der Arbeit, deren Stärken (strengths), deren Schwächen (weaknesses) sowie eine abschließende Bewertung inklusive eines Notenvorschlags (evaluation) beinhalten";
+
+                Content contents = new Content() { Parts = new List<Part>() };
+                contents.Parts.Add(new Part() { Text = prompt });
+                contents.Parts.Add(new Part() { FileData = new FileData() { FileUri = uploadedFile.Uri, MimeType = "application/pdf" } });
+
+                Schema reviewInfo = new() {
+                    Properties = new Dictionary<string, Schema> {
+                        { "summary", new Schema { Type = Google.GenAI.Types.Type.String , Title = "summary" } },
+                        { "strengths", new Schema { Type = Google.GenAI.Types.Type.String , Title = "strengths" } },
+                        { "weaknesses", new Schema { Type = Google.GenAI.Types.Type.String , Title = "weaknesses" } },
+                        { "evaluation", new Schema { Type = Google.GenAI.Types.Type.String , Title = "evaluation" } }
+                    },
+                    PropertyOrdering = ["summary", "strengths", "weaknesses", "evaluation"],
+                    Required = ["summary", "strengths", "weaknesses", "evaluation"],
+                    Title = "reviewInfo",
+                    Type = Google.GenAI.Types.Type.Object
+                };
+
+                GenerateContentConfig config = new() {
+                    ResponseSchema = reviewInfo,
+                    ResponseMimeType = "application/json"
+                };
+
+                var response = await _geminiClient.Models.GenerateContentAsync(
+                    model: "gemini-2.5-flash",
+                    contents: contents,
+                    config: config);
+                
+                return Ok(response.Text);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (e.g., using a logging framework)
+                return StatusCode(500, $"Ein interner Fehler ist aufgetreten: {ex.Message}");
+            }
         }
 
         // POST: Review/Delete/5

@@ -2,6 +2,8 @@ using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ThesisDB.Models;
+using Google.GenAI;
+using Google.GenAI.Types;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +15,10 @@ builder.Services.AddDbContext<ThesisDbContext>(options =>
     options.UseAzureSql(connectionString));
 
 builder.Services.AddSingleton(x => new BlobServiceClient(builder.Configuration.GetConnectionString("AzureBlobStorage")));
+
+var geminiApiKey = builder.Configuration["Gemini:ApiKey"];
+builder.Services.AddSingleton(new Client(apiKey: geminiApiKey));
+
 
 builder.Services.AddIdentity<ThesisDbUser, IdentityRole>(options => {
         // Optionale Konfigurationen hier
